@@ -1,0 +1,349 @@
+---
+title: "WI Survey"
+author: "Maxwel Coura Oliveira"
+date: "11/19/2018"
+output: pdf_document
+---
+
+```{r include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(scales)
+library(ggthemes)
+library(usmap)
+library(ggmap)
+library(ggrepel)
+library(maps)
+library(grid)
+library(mapdata)
+library(maptools)
+library(stringr)
+library(dplyr)
+library(ggsn)
+library(choroplethr)
+```
+
+
+
+```{r}
+Data<-read.csv("Map.csv")
+```
+
+
+
+
+
+
+
+```{r}
+states = map_data("state")
+df <- subset(states, region =="wisconsin")
+```
+
+```{r}
+counties <- map_data("county")
+county <- subset(counties, region =="wisconsin")
+county 
+```
+
+```{r}
+base <- ggplot(data = df, mapping = aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.3) + 
+  geom_polygon(color = "black", fill = "white")
+base + theme_nothing()
+
+```
+
+
+```{r}
+Data1<-Data %>% 
+  select(subregion, Location, Latitude, Longitude) %>% 
+  count(subregion, na.rm = TRUE) %>% 
+  add_tally() %>% 
+  mutate(Perc=(n/nn)*100) %>% 
+  mutate(subregion = tolower(subregion))
+
+
+Map <- dplyr::full_join(Data1, county , by = "subregion")
+
+```
+
+
+
+
+
+```{r}
+ggplot(data = df, mapping = aes(x = long, y = lat, group = group)) + 
+  #geom_point(Data, mapping=aes(x=Longitude, y=Latitude, group=Location, color=Location), size=3) +
+  geom_polygon(data = Map, aes(group=subregion, fill = n)) +
+  geom_polygon(color = "black", fill = NA)  +  #scale_fill_gradient2(name="Number of respondents", low = "blue", high = "navy") +
+  labs(title="Survey respondents map", fill="", y="Latitude", x="Longitude", caption="Source: University of Wisconsin-Madison") + scale_fill_distiller(name="Number of respondents", palette="Blues") +
+  north(df, location = 'topright', symbol = 1, anchor = c(x = -92.5, y = 47.2)) +
+  scalebar(data=df, dist = 100, dd2km = T, model = 'International', location = "topright") + 
+      theme(axis.text=element_text(size=20, color="black"), 
+        axis.title=element_text(size=25,face="bold"), legend.box = "horizontal",
+        panel.background = element_rect(fill="white", color = "black"), 
+        panel.grid.major = element_line(color = "white"), 
+  panel.grid.minor = element_blank(),
+  legend.position="bottom", legend.text = element_text(size = 20, colour = "black"), legend.key = element_rect(fill=NA), panel.border = element_rect(fill=NA,color="black", size=0.5, linetype="solid"), plot.title = element_text(face="bold", size=40, color="red", hjust=-0.3) ,
+legend.background = element_rect(fill =NA), legend.key.width = unit(2.2, "line"), legend.title=element_text(size=20, face="bold")) + 
+    ggsave("map.tiff", units="in", width=10, height=12, dpi=600) 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+Crop <- c("Corn", "Soybeans", "Wheat", "Alfalfa", "Other")
+Values <- c(96.7, 91.4, 40.7, 60.9, 39.1)
+Data <- data.frame(Crop, Values)
+Data$Crop <-factor(Data$Crop, levels=c("Other", "Wheat", "Alfalfa", "Soybeans", "Corn"), labels=c("Other", "Wheat", "Alfalfa", "Soybeans", "Corn"))
+
+ggplot(Data, aes(x=Crop, y=Values, fill=Crop)) + geom_bar(stat="identity", width=0.7, color="black") + coord_flip() + labs(title="Crops", x="", y="% respondents", caption="Source: University of Wisconsin-Madison") + ylim(0,110) +
+  geom_label(aes(label=str_c(format(abs(Values)), "%")), fill="white", position = position_stack(vjust = 1), size=8) +
+  theme(axis.text.y =element_text(size=25, color="black", face="bold"), axis.text.x =element_blank(), 
+        axis.title.y =element_text(size=25, face="bold"), axis.title.x =element_text(size=25, face="bold"), panel.border = element_rect(colour = "black", fill=NA),
+        panel.background = element_rect(fill="white", color = "black"), legend.position="none", legend.title = element_text(face="bold"), legend.key = element_blank(), 
+        panel.grid.major = element_line(color = "white"), plot.title = element_text(size=30, face="bold", hjust = -0.45, color="red"),
+  panel.grid.minor = element_blank(), strip.background = element_rect(fill="grey95", color="white"), strip.text.y = element_text(size = 16, color="white"), strip.text.x = element_text(size = 16, color="black")) + scale_fill_brewer(palette="Set1") +
+  annotate("text", x = 0.7, y = 98, label = "Respondents = 243") +
+  annotate("text", x = 0.5, y = 95, label = "Answers = 799") + ggsave("Crop.tiff", height=6, width=8, dpi=600)
+```
+
+
+
+
+```{r}
+Weeds <- c("waterhemp", "giant ragweed", "common lambsquarters", "grass", "common ragweed", "horseweed", "pigweed", "velvetleaf", "yellow nutsedge", "Palmer amaranth", "other")
+Values <- c(68.5, 50.8, 19.3, 16.1, 15.4, 12.6, 10.2, 7.1, 4.7, 1.6, 7.1)
+Data <- data.frame(Weeds, Values)
+Data$Weeds <-factor(Data$Weeds, levels=c("other", "Palmer amaranth", "yellow nutsedge",  "velvetleaf",  "horseweed", "pigweed", "common ragweed", "grass",  "common lambsquarters", "giant ragweed",  "waterhemp"), labels=c("other", "Palmer amaranth", "yellow nutsedge",  "velvetleaf",  "horseweed", "pigweed", "common ragweed", "grass",  "common lambsquarters", "giant ragweed",  "waterhemp"))
+
+
+
+
+ggplot(Data, aes(x=Weeds, y=Values, fill=Weeds)) + geom_bar(stat="identity", width=0.8, color="black") + coord_flip() + labs(title="Most troublesome weeds", x="", y="% respondents", caption="Source: University of Wisconsin-Madison") + ylim(-5,110) +
+  geom_label(aes(label=str_c(format(abs(Values)), "%")), fill="white", position = position_stack(vjust = 1), size=5) +
+  theme(axis.text.y =element_text(size=22, color="black", face="bold"), axis.text.x =element_blank(), 
+        axis.title=element_text(size=22,face="bold"), panel.border = element_rect(colour = "black", fill=NA),
+        panel.background = element_rect(fill="white", color = "black"), legend.position="none", legend.title = element_text(face="bold"), legend.key = element_blank(), 
+        panel.grid.major = element_line(color = "white"), plot.title=element_text(size=30, face="bold", color="red", hjust=4),
+  panel.grid.minor = element_blank(), strip.background = element_rect(fill="grey95", color="white"), strip.text.y = element_text(size = 16, color="white"), strip.text.x = element_text(size = 16, color="black")) + scale_fill_manual(values = c("red", "blue", "green", "purple", "orange", "yellow", "brown", "pink", "grey50", "ivory", "black")) +
+  annotate("text", x = 1.1, y = 87, label = "Respondents = 254") +
+  annotate("text", x = 0.7, y = 83, label = "Answers = 542") + ggsave("Weeds.tiff", height=6, width=8,  dpi=600)
+```
+
+
+
+```{r}
+GlyR <- c("No", "waterhemp", "giant ragweed","horseweed", "common ragweed",  "Palmer amaranth", "other")
+Values <- c(29.8,56.5, 23.3, 9.5, 4.9, 3.8, 4.6)
+Data <- data.frame(GlyR, Values)
+Data$GlyR <-factor(Data$GlyR, levels=c("other", "Palmer amaranth",  "common ragweed",  "horseweed", "giant ragweed", "waterhemp",  "No"), labels=c("other", "Palmer amaranth",  "common ragweed",  "horseweed", "giant ragweed", "waterhemp", "No"))
+
+
+
+
+ggplot(Data, aes(x=GlyR, y=Values, fill=GlyR)) + geom_bar(stat="identity", width=0.7, color="black") + coord_flip() + labs(title="Glyphosate-resistance", x="", y="% respondents", caption="Source: University of Wisconsin-Madison") + ylim(-5,105) + geom_vline(xintercept=6.5, linetype="dashed", color="blue", size=1.25) +
+  geom_label(aes(label=str_c(format(abs(Values)), "%")), fill="white", position = position_stack(vjust = 1), size=7) +
+  theme(axis.text.y =element_text(size=25, color="black", face="bold"), axis.text.x =element_blank(), plot.title=element_text(size=30, face="bold", color="red", hjust=-92),
+        axis.title=element_text(size=25,face="bold"), panel.border = element_rect(colour = "black", fill=NA),
+        panel.background = element_rect(fill="white", color = "black"), legend.position="none", legend.title = element_text(face="bold"), legend.key = element_blank(), 
+        panel.grid.major = element_line(color = "white"), 
+  panel.grid.minor = element_blank(), strip.background = element_rect(fill="grey95", color="white"), strip.text.y = element_text(size = 16, color="white"),
+  strip.text.x = element_text(size = 16, color="black")) + scale_fill_brewer(palette="Set1") +
+  annotate("text", x = 0.9, y = 88, label = "Respondents = 262") +
+  annotate("text", x = 0.6, y = 84.5, label = "Answers = 371") + ggsave("GlyR.tiff", height=6, width=8,  dpi=600)
+```
+
+
+```{r}
+HerbR <- c("No", "ALS", "PPO", "PSII", "HPPD", "Glutamine syntethase", "waterhemp", "giant ragweed", "common ragweed", "horseweed", "other")
+Values <- c(54.7, 33.2, 5.1, 4.7, 0.9, 0.5, 22.0, 18.2, 7.5, 5.1, 7.0)
+Data <- data.frame(HerbR , Values)
+Data$HerbR  <-factor(Data$HerbR, levels=c("other",  "horseweed", "common ragweed",  "giant ragweed",  "waterhemp",  "Glutamine syntethase", "HPPD",  "PSII", "PPO", "ALS",  "No"), labels=c("other",  "horseweed", "common ragweed",  "giant ragweed",  "waterhemp",  "Glutamine synt", "HPPD",  "PSII", "PPO", "ALS",  "No"))
+
+
+
+
+ggplot(Data, aes(x=HerbR, y=Values, fill=HerbR)) + geom_bar(stat="identity", width=0.8, color="black") + coord_flip() + labs(title="Herbicide-resistance (not glyphosate)", x="", y="% respondents", caption="Source: University of Wisconsin-Madison") + ylim(-5,105) + geom_vline(xintercept=10.5, color="blue", linetype="dashed", size=1.25) + geom_vline(xintercept=5.5, color="blue",  linetype="dashed", size=1.25) +
+  geom_label(aes(label=str_c(format(abs(Values)), "%")), fill="white", position = position_stack(vjust = 1), size=6) +
+  theme(axis.text.y =element_text(size=25, color="black", face="bold"), axis.text.x =element_blank(), plot.title=element_text(size=30, face="bold", color="red", hjust=1.1),
+        axis.title=element_text(size=25,face="bold"), panel.border = element_rect(colour = "black", fill=NA),
+        panel.background = element_rect(fill="white", color = "black"), legend.position="none", legend.title = element_text(face="bold"), legend.key = element_blank(), 
+        panel.grid.major = element_line(color = "white"), 
+  panel.grid.minor = element_blank(), strip.background = element_rect(fill="grey95", color="white"), strip.text.y = element_text(size = 16, color="white"), strip.text.x = element_text(size = 16, color="black")) + scale_fill_manual(values = c("red", "blue", "green", "purple", "orange", "yellow", "brown", "pink", "grey50", "ivory", "black")) +
+  annotate("text", x = 1, y = 88, label = "Respondents = 214") +
+  annotate("text", x = 0.6, y = 84, label = "Answers = 334") +
+  annotate("text", x = 3, y = 60, label = "Weeds", size=9, color="blue") +
+  annotate("text", x = 8, y = 60, label = "Site-of-Action", size=9, color="blue") +
+  ggsave("HerbR.tiff", height=6, width=8, dpi=600)
+```
+
+
+
+```{r}
+Role=c("Agronomist", "Farmer", "Industry Rep", "Co-op", "University Rep", "Other")
+Values<-c(37.4, 24.5, 14.0, 8.0, 6.6, 9.4)
+Data <-data.frame(Role, Values)
+
+Data$Role <-factor(Data$Role, levels=c("Other", "University Rep", "Co-op", "Industry Rep", "Farmer","Agronomist"), labels=c("Other", "University Rep", "Co-op", "Industry Rep", "Farmer","Agronomist"))
+
+
+ggplot(Data, aes(x="", y=Values, fill=Role)) + geom_col(width=0.5, color="black") + #geom_bar(stat="identity", width=0.5, color="black") + 
+  labs(title="Primary role", x="", y="% respondents", caption="Source: University of Wisconsin-Madison") + ylim(0,100) +
+  geom_label(aes(label=str_c(format(abs(Values)), "%")), fill="white", position = position_stack(vjust = 0.5), size=7) +
+  theme(axis.text.y =element_blank(), axis.text.x =element_text(size=14, color="black"),
+        plot.title=element_text(size=30, face="bold", color="red", hjust=-0.10),
+        axis.title=element_text(size=25,face="bold"), panel.border = element_rect(colour = "black", fill=NA),
+        panel.background = element_rect(fill="white", color = "black"), legend.position=c(0.85, 0.6), 
+        legend.title = element_text(face="bold"), legend.key = element_blank(), 
+        panel.grid.major = element_line(color = "white"), legend.text = element_text(size = 15, colour = "black"),
+  panel.grid.minor = element_blank(), strip.background = element_rect(fill="grey95", color="white"),
+  strip.text.x = element_text(size = 16, color="black")) + scale_fill_brewer(name="", palette="Set1") +
+  annotate("text", x = 0.6, y = 5, label = "Respondents = 286") + #coord_flip() +
+  annotate("text", x = 0.57, y = 0, label = "Answers = 286") + ggsave("Role.tiff", dpi=600)
+```
+
+
+
+```{r}
+Tillage<-c("Yes", "No", "Partially")
+Values<-c(70.9, 16.1, 13.0)
+Data<-data.frame(Tillage, Values)
+
+
+ggplot(Data, aes(x="", y=Values, fill=Tillage, label=Tillage)) + geom_col(width=0.5, color="black") + labs(title="Adoption of tillage", x="", y="% respondents", caption="Source: University of Wisconsin-Madison") + ylim(0, 100) +
+  #coord_polar(theta = "y", start = pi / 3) + 
+  geom_label(aes(label=str_c(format(abs(Values)), "%")), fill="white", position = position_stack(vjust = 0.5), size=7) +
+  theme(axis.text.y =element_blank(), axis.text.x =element_text(size=14, color="black"), 
+        plot.title=element_text(size=30, face="bold", color="red", hjust=-0.1),
+        axis.title=element_text(face="bold", size=25), panel.border = element_rect(colour = "black", fill=NA),
+        panel.background = element_rect(fill="white", color = "black"), legend.position=c(0.85,0.77), 
+        legend.title = element_text(face="bold"), legend.key = element_blank(), 
+        panel.grid.major = element_line(color = "white"), legend.text = element_text(size = 18, colour = "black"),
+  panel.grid.minor = element_blank()) + scale_fill_brewer("", palette="Set1") +
+  annotate("text", x = 0.6, y = 5, label = "Respondents = 230") +
+  annotate("text", x = 0.57, y = 1, label = "Answers = 230") + 
+  ggsave("Tillage.tiff", dpi=600)
+```
+
+```{r}
+Cover<-c("Yes", "No")
+Values<-c(77.2, 22.8)
+Data<-data.frame(Cover, Values)
+
+
+ggplot(Data, aes(x="", y=Values, fill=Cover, label=Cover)) + geom_col(color="black") + labs(title="Cover crops", x="", y="% respondents", caption="Source: University of Wisconsin-Madison") + 
+  ylim(0, 100) +
+  coord_polar(theta = "y", start = pi / 3) + 
+  geom_label(aes(label=str_c(format(abs(Values)), "%")), fill="white", position = position_stack(vjust = 0.5), size=8) +
+  theme(axis.text =element_blank(),  plot.title=element_text(size=30, face="bold", color="red", hjust=-0.3),
+         axis.title.x=element_text(size=25,face="bold"), panel.border = element_rect(colour = "black", fill=NA),
+        panel.background = element_rect(fill="white", color = "black"), legend.position="bottom",
+        legend.title = element_text(face="bold"), 
+        legend.key = element_blank(), 
+        panel.grid.major = element_line(color = "white"), legend.text = element_text(size = 18, colour = "black"),
+  panel.grid.minor = element_blank(), strip.background = element_rect(fill="grey95", color="white"), strip.text.y = element_text(size = 16, color="white"), strip.text.x = element_text(size = 16, color="black")) + scale_fill_brewer("", palette="Set3") +
+  #annotate("text", x = 0, y = 0, label = "Respondents = 230") + 
+  ggsave("Cover.tiff", dpi=600)
+```
+
+
+```{r}
+Pass<-c("1 pass", "2 pass", "1 pass", "2 pass")
+Crop <- c("Corn", "Corn", "Soybean", "Soybean")
+Values<-c(62, 38, 43, 57)
+Data<-data.frame(Pass, Crop, Values)
+
+
+ggplot(Data, aes(x="", y=Values, fill=Pass, label=Pass)) + geom_col(color="black") + 
+  labs(title="Herbicide program", x="", y="% respondents", caption="Source: University of Wisconsin-Madison") + 
+  ylim(0, 100) + facet_wrap(~Crop) +
+  coord_polar(theta = "y", start = pi / 3) + 
+  geom_label(aes(label=str_c(format(abs(Values)), "%")), fill="white", position = position_stack(vjust = 0.5), size=8) +
+  theme(axis.text =element_blank(),  plot.title=element_text(size=30, face="bold", color="red", hjust=-0.40),
+         axis.title.x=element_text(size=25,face="bold"), panel.border = element_rect(colour = "black", fill=NA),
+        panel.background = element_rect(fill="white", color = "black"), legend.position="bottom",
+        legend.title = element_text(face="bold"), legend.key = element_blank(), 
+        panel.grid.major = element_line(color = "white"), legend.text = element_text(size = 18, colour = "black"),
+  panel.grid.minor = element_blank(), strip.background = element_rect(fill="grey95", color="white"), strip.text.x = element_text(size = 25, color="black", face="bold")) + scale_fill_brewer("", palette="Set3") +
+    #geom_label_repel(aes(y=Values, label=paste0( Cover, "(", Values, "%)")),
+        #          nudge_x = 0.3,
+        #          show.legend = FALSE) +
+  # annotate("text", x = 0, y = 0, label = "Respondents = 262") + # corn
+  # annotate("text", x = 0, y = 0, label = "Answers = 388") + # corn
+  # annotate("text", x = 0, y = 0, label = "Respondents = 257") + # soy
+  # annotate("text", x = 0, y = 0, label = "Answers = 423") + # soy
+  ggsave("Pass.tiff", height=5, width=8, dpi=600)
+```
+
+
+
+```{r}
+Auxin<-c("Yes", "No", "Yes", "No")
+Values<-c(37.9, 62.1, 77.2, 22.8)
+Type <-c("Auxin tolerant crops",  "Auxin tolerant crops", "Cover crops", "Cover crops")
+Data<-data.frame(Type, Auxin, Values)
+
+
+ggplot(Data, aes(x="", y=Values, fill=Auxin, label=Auxin)) + geom_col(color="black") + labs(title="Crop adoption interests", x="", y="% respondents", caption="Source: University of Wisconsin-Madison") + 
+  ylim(0, 100) +
+  coord_polar(theta = "y", start = pi / 3) + facet_wrap(~Type) +
+  geom_label(aes(label=str_c(format(abs(Values)), "%")), fill="white", position = position_stack(vjust = 0.5), size=8) +
+  theme(axis.text =element_blank(),  plot.title=element_text(size=30, face="bold", color="red", hjust=-0.5),
+         axis.title.x=element_text(size=25,face="bold"), panel.border = element_rect(colour = "black", fill=NA),
+        panel.background = element_rect(fill="white", color = "black"), legend.position="bottom",
+        legend.title = element_text(face="bold"), 
+        legend.key = element_blank(), 
+        panel.grid.major = element_line(color = "white"), legend.text = element_text(size = 18, colour = "black"),
+  panel.grid.minor = element_blank(), strip.background = element_rect(fill="grey95", color="white"), strip.text.y = element_text(size = 16, color="white"), strip.text.x = element_text(size = 20, face="bold", color="black")) + scale_fill_brewer("", palette="Set3") +
+  #annotate("text", x = 0, y = 0, label = "Respondents = 230") + 
+  ggsave("Auxin_cover.tiff", height=5, width=8, dpi=600)
+```
+
+
+```{r}
+Cover<-c("Yes", "No")
+Values<-c(77.2, 22.8)
+Data<-data.frame(Cover, Values)
+
+
+ggplot(Data, aes(x="", y=Values, fill=Cover, label=Cover)) + geom_col(color="black") + labs(title="Cover crops", x="", y="% respondents", caption="Source: University of Wisconsin-Madison") + 
+  ylim(0, 100) +
+  coord_polar(theta = "y", start = pi / 3) + 
+  geom_label(aes(label=str_c(format(abs(Values)), "%")), fill="white", position = position_stack(vjust = 0.5), size=8) +
+  theme(axis.text =element_blank(),  plot.title=element_text(size=30, face="bold", color="red", hjust=-0.3),
+         axis.title.x=element_text(size=25,face="bold"), panel.border = element_rect(colour = "black", fill=NA),
+        panel.background = element_rect(fill="white", color = "black"), legend.position="bottom",
+        legend.title = element_text(face="bold"), 
+        legend.key = element_blank(), 
+        panel.grid.major = element_line(color = "white"), legend.text = element_text(size = 18, colour = "black"),
+  panel.grid.minor = element_blank(), strip.background = element_rect(fill="grey95", color="white"), strip.text.y = element_text(size = 16, color="white"), strip.text.x = element_text(size = 16, color="black")) + scale_fill_brewer("", palette="Set3") +
+  #annotate("text", x = 0, y = 0, label = "Respondents = 230") + 
+  ggsave("Cover.tiff", dpi=600)
+```
